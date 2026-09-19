@@ -1,39 +1,45 @@
-pp5002: select IDE bus timing by clock and pace PIO data writes
+ata: settle before trusting DRQ between data blocks; pp5002 timing and pacing
 
-The PP5002 ATA driver programs one fixed IDE controller timing
-(0x10 / 0x80002150, copied from iPodLinux) and never revisits it.
-The retail firmware selects the timing pair, and bit 2 of the IDE
-config register, from the current clock configuration; 0x10 is only
-one entry of that table.
+Three related fixes for PIO transfers to flash storage on the PP5002
+iPods (1G/2G/3G), found bringing up a CF bridge but not specific to it.
 
-With an original 1.8" drive this does not matter. With flash storage
-behind a bridge that adds latency on the read side it does:
+1. ata.c: between the data blocks of a multi-sector transfer,
+   wait_for_start_of_transfer() waits for BSY to clear and then reads
+   status once, requiring DRQ. That is correct for a hard drive, which
+   raises BSY within nanoseconds of the last word of a block. A CF card
+   can leave the previous block's DRQ standing for microseconds, so the
+   check passes on stale state, the next block is written into a device
+   that is not accepting data, words are lost, and the transfer ends with
+   DRQ still set: "Could not write sector N (error -4)", intermittently,
+   on long writes such as a database build. Add a bounded poll, enabled
+   by ATA_DRQ_SETTLE_POLLS, that waits for the device to raise BSY or
+   drop DRQ before the existing check. Defined for PP5002; other targets
+   are unchanged.
 
- * At 80 MHz (boosted, which is where ata_init() runs) 0x10 is too fast
-   and taskfile readback fails, so init dies with "ATA error: -32".
-   The retail's 80 MHz entry (0x11c1 / 0x80003261, cfg bit 2 set) works.
-   Conversely that entry does not work at 30 MHz, where 0x10 does.
+   Reproduced on an iPod 2G with a CF card: an unmodified build failed
+   one of two database builds with -4; with this change three
+   consecutive builds completed. The same failure was reported by a
+   user on a second iPod and card.
 
- * Once a slower timing is in use, every write fails with -4: the
-   controller posts data register writes, and copy_write_sectors()
-   stores words faster than the bus can complete them. Overrun words
-   are silently dropped and the device waits on DRQ for the rest of
-   the block. Taskfile writes already wait on the controller idle bit
-   (ATA_OUT8); do the same for data words (ATA_OUT16).
+2. ata-target.h (PP5002): wait for the controller's idle bit after each
+   PIO data word on writes, as ATA_OUT8 already does for taskfile writes.
+   The controller posts data-register writes; if the CPU stores words
+   faster than the bus timing completes them, words are dropped.
+   Invisible at the stock 0x10 timing, exposed by slower timings.
 
-So: program the timing from set_cpu_frequency() and ata_device_init()
-according to the clock, using the retail values, and pace data writes
-on the idle bit. The bootloader keeps the historical constant, since
-it runs at whatever clock the ROM left and has no frequency scaling.
+3. ata-pp5002.c / system-pp5002.c: select the IDE controller timing from
+   the CPU clock instead of the fixed 0x10 / 0x80002150 inherited from
+   iPodLinux. The retail firmware keys the same registers to its clock
+   configuration; the values here are its 30 MHz and 80 MHz entries
+   (0x10 / 0x80002150 and 0x11c1 / 0x80003261 with config bit 2). Storage
+   with added read latency (a bridge or a slow adapter) fails the
+   taskfile readback self-test at 80 MHz with 0x10 (ATA error -32) and
+   works with the retail values; with an original drive both work.
+   The bootloader keeps the historical constant.
 
-This mirrors what the PP502x port did in 2014 when it switched from
-0x10 to the OF timing table for mSATA and SD adapters.
-
-Verified on an iPod 2G with a MachXO2 CF interposer, with both an
-FC1307A SD-to-CF adapter and a genuine CF card: boot, reads, and
-writes (disk cache flush, config write) all succeed; before the
-change, each of the two failures above was reproduced on the same
-hardware. The 30 MHz / 0x10 pairing was verified for init and reads.
-Not yet tested on an original drive or on an iPod 3G.
+Verified on an iPod 2G with an FPGA CF bridge (two bridge firmware
+variants), an FC1307A SD-to-CF adapter and a genuine CF card: boot,
+reads, disk-cache flush writes, database builds, playback. Not yet
+tested on an original drive or on an iPod 3G.
 
 Change-Id: I0000000000000000000000000000000000000000
