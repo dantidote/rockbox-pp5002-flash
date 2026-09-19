@@ -38,11 +38,23 @@ Two separate things:
    so with a slower bus the controller drops words and every write fails
    with `-4`.
 
-`pp5002-sphinxmoth.patch` fixes the second problem at the source, the way
-the retail firmware and Rockbox's own PP502x port already do: select the
-IDE timing from the CPU clock, and wait for the controller's idle bit after
-each data word. `upstream-commit-message.txt` is the message for sending
-it to Rockbox; once merged, this repo becomes unnecessary for new releases.
+3. **Long writes fail intermittently with `-4` on every bridge image**,
+   typically during a database build or a large theme install. Between the
+   data blocks of a multi-sector write, Rockbox checks BSY-clear then DRQ
+   once. A hard drive raises BSY within nanoseconds of the last word; a
+   flash card can leave the previous block's DRQ standing for microseconds,
+   so the check passes on stale state, the next block is pushed into a card
+   that is not listening, words are lost and the transfer ends with DRQ
+   stuck.
+
+`pp5002-sphinxmoth.patch` fixes the second and third problems at the
+source, the way the retail firmware and Rockbox's own PP502x port already
+do for the timing: select the IDE timing from the CPU clock, wait for the
+controller's idle bit after each data word, and wait (bounded,
+`ATA_DRQ_SETTLE_POLLS`) for the card to go BSY or drop DRQ before trusting
+the next-block check. `upstream-commit-message.txt` is the message for
+sending it to Rockbox; once merged, this repo becomes unnecessary for new
+releases.
 
 The hand-patched 4.0 binaries in `releases/` predate the source patch and
 pin the CPU at 80 MHz instead of keying the timing to the clock; they are
