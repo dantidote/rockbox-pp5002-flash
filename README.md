@@ -8,7 +8,7 @@ builds, and the workflow that produces them.
 
 | Your bridge image | 1G/2G | 3G |
 |---|---|---|
-| `v1.1-mg132-fix3b` (every board shipped so far) | [`releases/4.0-ipod1g2g/rockbox.ipod.fix3b-gateware`](releases/4.0-ipod1g2g/) (tested) | [`releases/4.0-ipod3g/rockbox.ipod.fix3b-gateware`](releases/4.0-ipod3g/) (untested) |
+| `v1.1-mg132-fix3b` (every board shipped so far) | [`releases/4.0-ipod1g2g/rockbox.ipod.fix3b-gateware`](releases/4.0-ipod1g2g/) (boots and plays; long writes such as a database build can still fail with `-4`, see problem 3 below; the pipeline builds carry the fix) | [`releases/4.0-ipod3g/rockbox.ipod.fix3b-gateware`](releases/4.0-ipod3g/) (untested) |
 | raw-pad PIO passthrough image (newer) | [`releases/4.0-ipod1g2g/rockbox.ipod`](releases/4.0-ipod1g2g/) (crash fix only) or any Rockbox dev build | stock Rockbox 4.0 |
 
 Install Rockbox 4.0 with Rockbox Utility, then in disk mode copy the file
