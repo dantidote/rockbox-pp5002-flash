@@ -6,17 +6,30 @@ builds, and the workflow that produces them.
 
 ## Which file do I need?
 
-| Your bridge image | 1G/2G | 3G |
-|---|---|---|
-| `v1.1-mg132-fix3b` (every board shipped so far) | [`releases/4.0-ipod1g2g/rockbox.ipod.fix3b-gateware`](releases/4.0-ipod1g2g/) (boots and plays; long writes such as a database build can still fail with `-4`, see problem 3 below; the pipeline builds carry the fix) | [`releases/4.0-ipod3g/rockbox.ipod.fix3b-gateware`](releases/4.0-ipod3g/) (untested) |
-| raw-pad PIO passthrough image (newer) | [`releases/4.0-ipod1g2g/rockbox.ipod`](releases/4.0-ipod1g2g/) (crash fix only) or any Rockbox dev build | stock Rockbox 4.0 |
+**Use the latest pipeline build for either bridge image and either iPod
+generation.** It is a current Rockbox development build with the driver
+patch applied (timing keyed to the clock, paced writes, and the inter-block
+settle that fixes the intermittent `error -4` on database builds):
 
-Install Rockbox 4.0 with Rockbox Utility, then in disk mode copy the file
-over `.rockbox/rockbox.ipod`, renaming it to `rockbox.ipod`. The READMEs in
-each folder carry checksums and details. Swap only that one file: codecs
-and plugins must come from the same release as the main binary.
+| iPod | File |
+|---|---|
+| 1G / 2G | [`rockbox-ipod1g2g-sphinxmoth.ipod`](https://github.com/dantidote/sphinxmoth-rockbox/releases/download/rockbox-master-sphinxmoth/rockbox-ipod1g2g-sphinxmoth.ipod) |
+| 3G | [`rockbox-ipod3g-sphinxmoth.ipod`](https://github.com/dantidote/sphinxmoth-rockbox/releases/download/rockbox-master-sphinxmoth/rockbox-ipod3g-sphinxmoth.ipod) (built the same way, not yet hardware-tested) |
 
-The same files are served from [wunkuslabs.com/guide](https://wunkuslabs.com/guide#rockbox).
+Install a Rockbox **development build** (not 4.0) with Rockbox Utility, then
+in disk mode copy the file over `.rockbox/rockbox.ipod`, renaming it to
+`rockbox.ipod`. It must sit on a development install: codecs and plugins are
+version-locked to the binary, and a 4.0 install under this file makes every
+track skip. The full `.zip` on the
+[release page](https://github.com/dantidote/sphinxmoth-rockbox/releases/tag/rockbox-master-sphinxmoth)
+is a complete install if you would rather unzip than swap a file.
+
+Verified 2026-09-19 on an iPod 2G with the raw-pad PIO bridge image: three
+consecutive database builds on a large library, where the unpatched dev
+build failed one of two. Test on a fix3b board pending.
+
+The older hand-patched 4.0 files in `releases/` are kept for reference; they
+boot and play but can still fail long writes (problem 3 below).
 
 ## Why Rockbox needs help on this board
 
