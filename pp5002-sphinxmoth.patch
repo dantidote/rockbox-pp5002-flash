@@ -1,6 +1,30 @@
+--- a/firmware/drivers/ata.c
++++ b/firmware/drivers/ata.c
+@@ -282,6 +282,21 @@
+ 
+ static ICODE_ATTR int wait_for_start_of_transfer(void)
+ {
++#ifdef ATA_DRQ_SETTLE_POLLS
++    /* Between the data blocks of a multi-sector transfer the device may not
++     * have reacted to the last word of the previous block yet: a hard drive
++     * raises BSY within nanoseconds, but a flash card can leave DRQ from the
++     * finished block standing for microseconds. Sampling that stale DRQ as
++     * "next block ready" makes us push data into a device that is not
++     * listening, and the transfer ends with DRQ stuck (-4). Wait, bounded,
++     * until the device has either gone BSY or dropped DRQ before trusting
++     * the check below. Harmless on the first block after a command. */
++    for (int i = 0; i < ATA_DRQ_SETTLE_POLLS; i++) {
++        unsigned char s = ATA_IN8(ATA_ALT_STATUS);
++        if ((s & STATUS_BSY) || !(s & STATUS_DRQ))
++            break;
++    }
++#endif
+     if (!wait_for_bsy())
+         return 0;
+ 
 --- a/firmware/target/arm/pp/ata-target.h
 +++ b/firmware/target/arm/pp/ata-target.h
-@@ -40,6 +40,21 @@
+@@ -40,6 +40,27 @@
                                while (!(IDE_CFG_STATUS & 0x40)); \
                            } while (0)
  
@@ -14,6 +38,12 @@
 +#define ATA_OUT16(reg,val) do { reg = (val); \
 +                               while (!(IDE_CFG_STATUS & 0x40)); \
 +                           } while (0)
++
++/* Let a flash card react to the end of a written data block before the next
++ * block's DRQ check (see wait_for_start_of_transfer in ata.c). Each poll is
++ * one alternate-status bus cycle, so this bounds the wait to a few
++ * microseconds. */
++#define ATA_DRQ_SETTLE_POLLS 64
 +
 +/* Program the IDE controller's cycle timing for the given CPU frequency.
 + * Called from set_cpu_frequency() and from ata_device_init(). */
