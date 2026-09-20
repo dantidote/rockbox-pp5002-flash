@@ -5,8 +5,8 @@ name: Rockbox builds for PP5002 iPods with flash storage
 # runs reliably on flash storage: CF cards, SD adapters, the Sphinxmoth bridge.
 #
 #  - weekly: builds the newest upstream release tag if it has not been built yet
-#    and publishes it as a GitHub release "rockbox-<tag>-pp5002-flash";
-#    on-demand builds of a branch are tagged by the upstream commit instead
+#    and publishes it as one GitHub release per model, "rockbox-<tag>-<model>",
+#    each carrying a plain rockbox.ipod; branch builds use the upstream commit
 #  - on demand: builds any Rockbox ref (tag, branch, commit); publish is optional
 #
 # The output is NOT hardware-tested by this workflow. Test a build on a fix3b
@@ -55,8 +55,8 @@ jobs:
             ref=$(git ls-remote --tags --refs https://github.com/Rockbox/rockbox.git 'v*' \
                   | awk -F/ '{print $NF}' | grep -E '^v[0-9]+\.[0-9]+(\.[0-9]+)?(-final)?$' | sort -V | tail -1)
             publish=true
-            if gh release view "rockbox-${ref}-pp5002-flash" -R "${{ github.repository }}" >/dev/null 2>&1; then
-              echo "release rockbox-${ref}-pp5002-flash already exists, nothing to do"
+            if gh release view "rockbox-${ref}-ipod1g2g" -R "${{ github.repository }}" >/dev/null 2>&1; then
+              echo "release rockbox-${ref}-ipod1g2g already exists, nothing to do"
               echo "skip=true" >> "$GITHUB_OUTPUT"
             fi
           fi
@@ -154,7 +154,7 @@ jobs:
           path: out/
           if-no-files-found: error
 
-      - name: Publish as a GitHub release
+      - name: Publish as GitHub releases (one per iPod model)
         if: steps.pick.outputs.skip != 'true' && steps.pick.outputs.publish == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
@@ -162,27 +162,24 @@ jobs:
           set -eu
           ref="${{ steps.pick.outputs.ref }}"
           ver=$(grep -h "^Version" out/ipod1g2g/rockbox-info.txt | cut -d' ' -f2)
-          # release tags are named after the upstream tag; branch builds after the
-          # exact upstream commit, so each tested build keeps its own URL
-          case "$ref" in
-            v*) tag="rockbox-${ref}-pp5002-flash" ;;
-            *)  tag="rockbox-$(git -C rockbox rev-parse --short=10 HEAD)-pp5002-flash" ;;
-          esac
-          rm -rf release && mkdir release
+          # release builds are named after the upstream tag, branch builds after
+          # the exact upstream commit, so each tested build keeps its own URL.
+          # One release per model so the binary can be a plain rockbox.ipod.
+          case "$ref" in v*) base="rockbox-${ref}" ;; *) base="rockbox-$(git -C rockbox rev-parse --short=10 HEAD)" ;; esac
           for t in $TARGETS; do
-            cp "out/$t/rockbox.ipod" "release/rockbox-$t-pp5002-flash.ipod"
-            cp "out/$t/rockbox-$t-pp5002-flash.zip" release/
+            case "$t" in ipod1g2g) model="iPod 1G/2G" ;; ipod3g) model="iPod 3G" ;; *) model="$t" ;; esac
+            tag="${base}-${t}"
+            rm -rf release && mkdir release
+            cp "out/$t/rockbox.ipod" release/rockbox.ipod
+            cp "out/$t/rockbox-$t-pp5002-flash.zip" "release/rockbox-$t-full-install.zip"
+            ( cd release && sha256sum * > SHA256SUMS.txt )
+            notes=$(printf '%s\n\n%s\n' \
+              "Rockbox ${ver} (upstream ref ${ref}) for the ${model} with pp5002-flash.patch applied: inter-block DRQ settle, paced PIO data writes and clock-keyed IDE timing, for flash storage (CF cards, SD adapters, the Sphinxmoth bridge)." \
+              "Install a Rockbox development build with Rockbox Utility, then copy rockbox.ipod over .rockbox/rockbox.ipod on the iPod (no renaming needed), or unzip the full install over the iPod. Built automatically; not hardware-tested by this workflow.")
+            if gh release view "$tag" -R "${{ github.repository }}" >/dev/null 2>&1; then
+              gh release upload "$tag" release/* --clobber -R "${{ github.repository }}"
+              gh release edit "$tag" --notes "$notes" -R "${{ github.repository }}"
+            else
+              gh release create "$tag" release/* --title "Rockbox ${ver} for ${model} (flash storage fix)" --notes "$notes" --prerelease --latest=false -R "${{ github.repository }}"
+            fi
           done
-          ( cd release && sha256sum * > SHA256SUMS.txt )
-          notes=$(printf '%s\n\n%s\n' \
-            "Rockbox ${ver} (upstream ref ${ref}) for iPod 1G/2G and 3G with pp5002-flash.patch applied: inter-block DRQ settle, paced PIO data writes and clock-keyed IDE timing, for flash storage (CF cards, SD adapters, the Sphinxmoth bridge)." \
-            "Install Rockbox for your iPod with Rockbox Utility, then copy the .ipod file for your model over .rockbox/rockbox.ipod (rename it to rockbox.ipod), or unzip the full .zip over the iPod. Built automatically; not hardware-tested by this workflow.")
-          # every automated build is untested on hardware: always a prerelease,
-          # promote by hand after a database-build test
-          pre="--prerelease --latest=false"
-          if gh release view "$tag" -R "${{ github.repository }}" >/dev/null 2>&1; then
-            gh release upload "$tag" release/* --clobber -R "${{ github.repository }}"
-            gh release edit "$tag" --notes "$notes" -R "${{ github.repository }}"
-          else
-            gh release create "$tag" release/* --title "Rockbox ${ver} for PP5002 iPods with flash storage" --notes "$notes" $pre -R "${{ github.repository }}"
-          fi
