@@ -60,6 +60,10 @@ jobs:
               echo "skip=true" >> "$GITHUB_OUTPUT"
             fi
           fi
+          # actions/checkout needs a full SHA for a commit ref; resolve short ones
+          if echo "$ref" | grep -qE '^[0-9a-f]{7,39}$'; then
+            ref=$(gh api "repos/Rockbox/rockbox/commits/$ref" --jq .sha)
+          fi
           echo "Rockbox ref: $ref (publish=$publish)"
           echo "ref=$ref" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
@@ -173,7 +177,9 @@ jobs:
           notes=$(printf '%s\n\n%s\n' \
             "Rockbox ${ver} (upstream ref ${ref}) for iPod 1G/2G and 3G with pp5002-flash.patch applied: inter-block DRQ settle, paced PIO data writes and clock-keyed IDE timing, for flash storage (CF cards, SD adapters, the Sphinxmoth bridge)." \
             "Install Rockbox for your iPod with Rockbox Utility, then copy the .ipod file for your model over .rockbox/rockbox.ipod (rename it to rockbox.ipod), or unzip the full .zip over the iPod. Built automatically; not hardware-tested by this workflow.")
-          case "$ref" in master|main) pre="--prerelease --latest=false" ;; *) pre="" ;; esac
+          # every automated build is untested on hardware: always a prerelease,
+          # promote by hand after a database-build test
+          pre="--prerelease --latest=false"
           if gh release view "$tag" -R "${{ github.repository }}" >/dev/null 2>&1; then
             gh release upload "$tag" release/* --clobber -R "${{ github.repository }}"
             gh release edit "$tag" --notes "$notes" -R "${{ github.repository }}"
