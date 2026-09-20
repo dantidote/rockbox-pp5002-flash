@@ -1,8 +1,11 @@
-# Rockbox for Sphinxmoth iPods
+# Rockbox on PP5002 iPods with flash storage
 
-Everything Rockbox-related for the [Sphinxmoth](https://github.com/dantidote/sphinxmoth)
-flash mod for FireWire iPods (1G, 2G, 3G): the driver patch, ready-to-copy
-builds, and the workflow that produces them.
+Rockbox's PP5002 (iPod 1G, 2G, 3G) disk driver assumes the original Toshiba
+hard drive. With a CF card, an SD adapter, or the
+[Sphinxmoth](https://github.com/dantidote/sphinxmoth) bridge it fails in three
+ways described below. This repo holds the driver patch that fixes them,
+ready-to-copy builds, and the workflow that produces them. Found and tested
+on Sphinxmoth hardware; nothing in the patch is specific to it.
 
 ## Which file do I need?
 
@@ -13,15 +16,15 @@ settle that fixes the intermittent `error -4` on database builds):
 
 | iPod | File |
 |---|---|
-| 1G / 2G | [`rockbox-ipod1g2g-sphinxmoth.ipod`](https://github.com/dantidote/sphinxmoth-rockbox/releases/download/rockbox-master-sphinxmoth/rockbox-ipod1g2g-sphinxmoth.ipod) |
-| 3G | [`rockbox-ipod3g-sphinxmoth.ipod`](https://github.com/dantidote/sphinxmoth-rockbox/releases/download/rockbox-master-sphinxmoth/rockbox-ipod3g-sphinxmoth.ipod) (built the same way, not yet hardware-tested) |
+| 1G / 2G | [`rockbox-ipod1g2g-pp5002-flash.ipod`](https://github.com/dantidote/rockbox-pp5002-flash/releases/download/rockbox-d23a19dc2d-pp5002-flash/rockbox-ipod1g2g-pp5002-flash.ipod) |
+| 3G | [`rockbox-ipod3g-pp5002-flash.ipod`](https://github.com/dantidote/rockbox-pp5002-flash/releases/download/rockbox-d23a19dc2d-pp5002-flash/rockbox-ipod3g-pp5002-flash.ipod) (built the same way, not yet hardware-tested) |
 
 Install a Rockbox **development build** (not 4.0) with Rockbox Utility, then
 in disk mode copy the file over `.rockbox/rockbox.ipod`, renaming it to
 `rockbox.ipod`. It must sit on a development install: codecs and plugins are
 version-locked to the binary, and a 4.0 install under this file makes every
 track skip. The full `.zip` on the
-[release page](https://github.com/dantidote/sphinxmoth-rockbox/releases/tag/rockbox-master-sphinxmoth)
+[release page](https://github.com/dantidote/rockbox-pp5002-flash/releases/tag/rockbox-d23a19dc2d-pp5002-flash)
 is a complete install if you would rather unzip than swap a file.
 
 Verified 2026-09-19 on an iPod 2G with the raw-pad PIO bridge image: three
@@ -60,7 +63,7 @@ Two separate things:
    that is not listening, words are lost and the transfer ends with DRQ
    stuck.
 
-`pp5002-sphinxmoth.patch` fixes the second and third problems at the
+`pp5002-flash.patch` fixes the second and third problems at the
 source, the way the retail firmware and Rockbox's own PP502x port already
 do for the timing: select the IDE timing from the CPU clock, wait for the
 controller's idle bit after each data word, and wait (bounded,
@@ -83,17 +86,18 @@ builds do not inherit the boot crash; on newer refs it is detected as
 already present and skipped. The workflow runs:
 
 - **Weekly** (Monday 06:17 UTC): finds the newest upstream release tag
-  (`vX.Y` or `vX.Y-final`) and, if there is no `rockbox-<tag>-sphinxmoth`
+  (`vX.Y` or `vX.Y-final`) and, if there is no `rockbox-<tag>-pp5002-flash`
   release here yet, builds and publishes one.
 - **On demand** (Actions, "Run workflow"): any Rockbox ref; `publish`
-  controls whether a release is created. Building `master` publishes a
-  rolling prerelease.
+  controls whether a release is created. Branch builds are tagged by the
+  upstream commit (`rockbox-<commit>-pp5002-flash`), so every tested build
+  keeps its own URL.
 
 The arm-elf-eabi toolchain (`tools/rockboxdev.sh --target=a`, gcc 9.5) is
 built once and cached; the first run takes 20 to 30 minutes.
 
-Each release carries `rockbox-ipod1g2g-sphinxmoth.ipod`,
-`rockbox-ipod3g-sphinxmoth.ipod`, a full `.zip` install for each, and
+Each release carries `rockbox-ipod1g2g-pp5002-flash.ipod`,
+`rockbox-ipod3g-pp5002-flash.ipod`, a full `.zip` install for each, and
 `SHA256SUMS.txt`.
 
 **A build that compiles is not a build that works.** The workflow tests
@@ -101,7 +105,7 @@ nothing on hardware. Before a workflow build replaces a tested file here or
 on the website, boot it on a fix3b board, do a write (plug in FireWire and
 let Rockbox flush to disk mode), and play a track. If the patch stops
 applying because upstream changed the driver, the workflow fails at the
-"Apply the Sphinxmoth patch" step; check whether upstream now carries the
+"Apply the flash-storage patch" step; check whether upstream now carries the
 fix before rebasing.
 
 ## License
