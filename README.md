@@ -16,15 +16,15 @@ settle that fixes the intermittent `error -4` on database builds):
 
 | iPod | File |
 |---|---|
-| 1G / 2G | [`rockbox-ipod1g2g-pp5002-flash.ipod`](https://github.com/dantidote/rockbox-pp5002-flash/releases/download/rockbox-d23a19dc2d-pp5002-flash/rockbox-ipod1g2g-pp5002-flash.ipod) |
-| 3G | [`rockbox-ipod3g-pp5002-flash.ipod`](https://github.com/dantidote/rockbox-pp5002-flash/releases/download/rockbox-d23a19dc2d-pp5002-flash/rockbox-ipod3g-pp5002-flash.ipod) (built the same way, not yet hardware-tested) |
+| 1G / 2G | [`rockbox.ipod`](https://github.com/dantidote/rockbox-pp5002-flash/releases/download/rockbox-d23a19dc2d-ipod1g2g/rockbox.ipod) |
+| 3G | [`rockbox.ipod`](https://github.com/dantidote/rockbox-pp5002-flash/releases/download/rockbox-d23a19dc2d-ipod3g/rockbox.ipod) (built the same way, not yet hardware-tested) |
 
 Install a Rockbox **development build** (not 4.0) with Rockbox Utility, then
-in disk mode copy the file over `.rockbox/rockbox.ipod`, renaming it to
-`rockbox.ipod`. It must sit on a development install: codecs and plugins are
+in disk mode copy the file
+over `.rockbox/rockbox.ipod`. It must sit on a development install: codecs and plugins are
 version-locked to the binary, and a 4.0 install under this file makes every
 track skip. The full `.zip` on the
-[release page](https://github.com/dantidote/rockbox-pp5002-flash/releases/tag/rockbox-d23a19dc2d-pp5002-flash)
+[releases page](https://github.com/dantidote/rockbox-pp5002-flash/releases)
 is a complete install if you would rather unzip than swap a file.
 
 Verified 2026-09-19 on an iPod 2G with the raw-pad PIO bridge image: three
@@ -86,19 +86,18 @@ builds do not inherit the boot crash; on newer refs it is detected as
 already present and skipped. The workflow runs:
 
 - **Weekly** (Monday 06:17 UTC): finds the newest upstream release tag
-  (`vX.Y` or `vX.Y-final`) and, if there is no `rockbox-<tag>-pp5002-flash`
+  (`vX.Y` or `vX.Y-final`) and, if there are no `rockbox-<tag>-<model>`
   release here yet, builds and publishes one.
 - **On demand** (Actions, "Run workflow"): any Rockbox ref; `publish`
   controls whether a release is created. Branch builds are tagged by the
-  upstream commit (`rockbox-<commit>-pp5002-flash`), so every tested build
-  keeps its own URL.
+  upstream commit (`rockbox-<commit>-<model>`), so every tested build keeps
+  its own URL.
 
 The arm-elf-eabi toolchain (`tools/rockboxdev.sh --target=a`, gcc 9.5) is
 built once and cached; the first run takes 20 to 30 minutes.
 
-Each release carries `rockbox-ipod1g2g-pp5002-flash.ipod`,
-`rockbox-ipod3g-pp5002-flash.ipod`, a full `.zip` install for each, and
-`SHA256SUMS.txt`.
+There is one release per iPod model, each carrying a plain `rockbox.ipod`,
+a full-install `.zip`, and `SHA256SUMS.txt`.
 
 **A build that compiles is not a build that works.** The workflow tests
 nothing on hardware. Before a workflow build replaces a tested file here or
