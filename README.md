@@ -23,9 +23,7 @@ Install a Rockbox **development build** (not 4.0) with Rockbox Utility, then
 in disk mode copy the file
 over `.rockbox/rockbox.ipod`. It must sit on a development install: codecs and plugins are
 version-locked to the binary, and a 4.0 install under this file makes every
-track skip. The full `.zip` on the
-[releases page](https://github.com/dantidote/rockbox-pp5002-flash/releases)
-is a complete install if you would rather unzip than swap a file.
+track skip.
 
 Verified 2026-09-19 on an iPod 2G with the raw-pad PIO bridge image: three
 consecutive database builds on a large library, where the unpatched dev
@@ -96,8 +94,9 @@ already present and skipped. The workflow runs:
 The arm-elf-eabi toolchain (`tools/rockboxdev.sh --target=a`, gcc 9.5) is
 built once and cached; the first run takes 20 to 30 minutes.
 
-There is one release per iPod model, each carrying a plain `rockbox.ipod`,
-a full-install `.zip`, and `SHA256SUMS.txt`.
+There is one release per iPod model, carrying a plain `rockbox.ipod` and
+`SHA256SUMS.txt`. No full install is published: the file goes onto a
+Rockbox development install made with Rockbox Utility.
 
 **A build that compiles is not a build that works.** The workflow tests
 nothing on hardware. Before a workflow build replaces a tested file here or

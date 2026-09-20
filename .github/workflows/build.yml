@@ -171,11 +171,10 @@ jobs:
             tag="${base}-${t}"
             rm -rf release && mkdir release
             cp "out/$t/rockbox.ipod" release/rockbox.ipod
-            cp "out/$t/rockbox-$t-pp5002-flash.zip" "release/rockbox-$t-full-install.zip"
             ( cd release && sha256sum * > SHA256SUMS.txt )
             notes=$(printf '%s\n\n%s\n' \
               "Rockbox ${ver} (upstream ref ${ref}) for the ${model} with pp5002-flash.patch applied: inter-block DRQ settle, paced PIO data writes and clock-keyed IDE timing, for flash storage (CF cards, SD adapters, the Sphinxmoth bridge)." \
-              "Install a Rockbox development build with Rockbox Utility, then copy rockbox.ipod over .rockbox/rockbox.ipod on the iPod (no renaming needed), or unzip the full install over the iPod. Built automatically; not hardware-tested by this workflow.")
+              "Install a Rockbox development build with Rockbox Utility, then copy rockbox.ipod over .rockbox/rockbox.ipod on the iPod (no renaming needed). Built automatically; not hardware-tested by this workflow.")
             if gh release view "$tag" -R "${{ github.repository }}" >/dev/null 2>&1; then
               gh release upload "$tag" release/* --clobber -R "${{ github.repository }}"
               gh release edit "$tag" --notes "$notes" -R "${{ github.repository }}"
